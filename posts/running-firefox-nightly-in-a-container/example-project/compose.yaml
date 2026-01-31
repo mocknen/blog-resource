@@ -1,0 +1,63 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/refs/heads/main/schema/compose-spec.json
+
+x-vars:
+  environment:
+  - &env-wayland-display null
+  - &env-xdg-runtime-dir /tmp
+  volumes:
+  - &volume-user-config-mozilla
+    source: user-config-mozilla
+    target: /root/.config/mozilla
+    type: volume
+  - &bind-pulse-cookie
+    read_only: true
+    source: ${XDG_CONFIG_HOME:-~/.config}/pulse/cookie
+    target: /root/.config/pulse/cookie
+    type: bind
+  - &bind-pulse-socket
+    read_only: true
+    source: ${XDG_RUNTIME_DIR:?}/pulse/native
+    target: /tmp/pulse/native
+    type: bind
+  - &bind-wayland-socket
+    read_only: true
+    source: ${XDG_RUNTIME_DIR:?}/${WAYLAND_DISPLAY:?}
+    target: /tmp/${WAYLAND_DISPLAY:?}
+    type: bind
+
+services:
+
+  firefox-nightly:
+    build:
+      context: &build-context ./container
+      dockerfile: firefox-nightly.Containerfile
+    command: http://node:4321
+    environment:
+      WAYLAND_DISPLAY: *env-wayland-display
+      XDG_RUNTIME_DIR: *env-xdg-runtime-dir
+    volumes:
+    - *volume-user-config-mozilla
+    - *bind-pulse-cookie
+    - *bind-pulse-socket
+    - *bind-wayland-socket
+
+  node:
+    build:
+      context: *build-context
+      dockerfile: node.Containerfile
+    command: bash -c 'pnpm i --frozen-lockfile && pnpm dev'
+    environment:
+      ASTRO_TELEMETRY_DISABLED: 1
+    ports:
+    - app_protocol: http
+      host_ip: 127.0.0.1
+      target: 4321
+    volumes:
+    - source: .
+      target: &workdir /app
+      type: bind
+    working_dir: *workdir
+
+volumes:
+  user-config-mozilla: null

@@ -1,0 +1,6 @@
+dependencies:
+  astro: ^5.17.1
+name: example-project
+scripts:
+  dev: astro dev
+type: module
