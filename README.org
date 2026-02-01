@@ -1,0 +1,2 @@
+Repository for storing resources referenced in [[https://blog.mocknen.net/][my
+blog]].
